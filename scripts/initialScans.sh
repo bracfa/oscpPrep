@@ -29,7 +29,7 @@ echo "##### Running $0 on $IP ..."
 cd "$SCANS_DIR"
 if [ ! -d "$IP_DIR" ]; then
   mkdir "$IP_DIR"
-  echo "##### Created $IP_DIR"
+  echo -e "\n\n##### Created $IP_DIR"
 fi
 cd "$IP_DIR"
 
@@ -43,7 +43,7 @@ echo -e "\n\n#TCP# 2. Running: SYN ACK, verbose. For firewall discovery"
 echo "$PASS" | sudo -S nmap -sA -p- -v -oA "$IP""_nmap_tcp_sA_v" "$IP"
 
 # Get only the TCP port numbers
-TCP_PORTS=$(xmllint --xpath "//port/@portid" *nmap*tcp*.xml | sed 's/"//g' | awk -F"=" '{print $NF}' | sort -n | uniq | tr '\n' ',' | sed 's/.$//')
+#TCP_PORTS=$(xmllint --xpath "//port/@portid" *nmap*tcp*.xml | sed 's/"//g' | awk -F"=" '{print $NF}' | sort -n | uniq | tr '\n' ',' | sed 's/.$//')
 echo -e "\n\n##### TCP_PORTS: $TCP_PORTS"
 
 # Scan only the ports identified by previous nmap scans
@@ -54,22 +54,23 @@ echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -A -oA "$IP""_nmap_tcp_sS_A" "$IP"
 echo -e "\n\n#TCP# 5. Running: NSE scripts"
 echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" --script default,safe,auth,vuln -oA "$IP""_nmap_tcp_sS_nseDefaultSafeAuthVuln" "$IP"
 
+exit 0
 
+## When we come across a machine with open UDP ports, let's fix this to only parse for open ports
 ### UDP Scans
 echo -e "\n\n#UDP# 1. Running UDP defeat-icmp-ratelimit"
 echo "$PASS" | sudo -S nmap -sU -p- --defeat-icmp-ratelimit -oA "$IP""_nmap_udp_sU_defIcmpRateLimit" "$IP" 
 
 # Get only the port numbers
 UDP_PORTS=$(xmllint --xpath "//port/@portid" *nmap*udp*.xml | sed 's/"//g' | awk -F"=" '{print $NF}' | sort -n | uniq | tr '\n' ',' | sed 's/.$//')
-
-if [[ "$UDP_PORTS" != *"empty"* ]]; then
-  echo -e "\n\n##### UDP_PORTS: $UDP_PORTS"
+echo -e "\n\n##### UDP_PORTS:$UDP_PORTS"
+if [ ! -z "$UDP_PORTS" ] ; then
   echo -e "\n\n#UDP# 1. Running UDP, verbose, reason"
   echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -v --reason -oA "$IP""_nmap_udp_sU_v_reason" "$IP" 
-  echo -e "\n\n#UDP# 3. Running: UDP, version detection intensity 9"
+  echo -e "\n\n#UDP# 2. Running: UDP, version detection intensity 9"
   echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -sV --version-intensity 9 -oA "$IP""_nmap_udp_sU_sV_intensity9" "$IP"
-  echo -e "\n\n#UDP# 4. Running: UDP, aggressive scan" 
+  echo -e "\n\n#UDP# 3. Running: UDP, aggressive scan" 
   echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -A -oA "$IP""_nmap_udp_sU_A" "$IP"
-  echo -e "\n\n#UDP# 2. Running: NSE scripts"
+  echo -e "\n\n#UDP# 4. Running: NSE scripts"
   echo "$PASS" | sudo -S nmap -sU -p- --script default,safe,auth,vuln -oA "$IP""_nmap_udp_sU_nseDefaultSafeAuthVuln" "$IP"
 fi
