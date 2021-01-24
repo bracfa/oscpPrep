@@ -33,10 +33,14 @@ ENUM_ARR+=('http')
 SCANS_DIR="/home/kali/GitWorkspace/oscpPrep/scans/"
 # Target IP directory
 IP_DIR=""
+# Screenshots directory
+SCREEN_DIR=""
+
+#----- FILE NAMES -----#
 # Custom list of wordlists for http
 WRD_LSTS="/home/kali/GitWorkspace/oscpPrep/cfgs/discover_webdirs.txt"
 # Seclist of web extensions
-SECLIST_WEBEXT="/usr/share/seclists/Discovery/Web-Content/web-extensions.txt"
+SECLIST_WEBEXT="/home/kali/GitWorkspace/oscpPrep/cfgs/web-extensions.txt"
 # Web extension list separated by commas
 WEBX_LST=""
 while read webx;
@@ -136,21 +140,43 @@ fi
 if [ "$ENUM" == "http" ]; then
   ### NSE
   echo -e "\n\n##### Running: NSE http"
-  #echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-enum,http-grep,http-config-backup,http-rfi-spider,http-default-accounts" "$IP" -oA "$IP""_nmap_tcp_nse_httpEnumGrepConfigRfiDefaccount_p""$TPORT"
-  
-  ### Discover web directories
-  echo -e "\n\n##### Running: nikto all plugins"
-  nikto -h "$IP" -p "$TPORT" -C all -Plugins @@ALL -Save "nikto_requestResponse" -output "$IP""_nikto_cAll_pluginsAll_p""$TPORT"".txt"
-  echo -e "\n\n##### Running: dirb non-recursive"
-  dirb http://"$IP"":""$TPORT" -r -o "$IP""_dirb_r_p""$TPORT"".txt"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-enum,http-grep,http-config-backup,http-rfi-spider,http-default-accounts" "$IP" -oA "$IP""_nmap_tcp_nse_httpEnumGrepConfigRfiDefaccount_p""$TPORT"
 
+  ### Nikto
+  #echo -e "\n\n##### Running: nikto all plugins"
+  #nikto -h "$IP" -p "$TPORT" -C all -Plugins @@ALL -Save "nikto_requestResponse_p""$TPORT" -output "$IP""_nikto_cAll_pluginsAll_p""$TPORT"".txt"
+  
+  ### Discover directories
+  # dirb
+  echo -e "\n\n##### Running: dirb non-recursive"
+  dirb http://"$IP"":""$TPORT" -r -o "$IP""_dirb_nonRecursive_p""$TPORT"".txt"
+  echo -e "\n\n##### Running: dirb recursive"
+  dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
+
+  # gobuster
   while IFS= read -r line; do
     echo "##### Running: GoBuster, wordlist=$line"
-    gobuster dir -e -u "http://""$IP" -s "200,204,301,302,307,403,500" -t 100 -x "$WEBX_LST" -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
+    gobuster dir -e -u "http://""$IP"":""$TPORT" -s "200,204,301,302,307,403,500" -t 100 -x "$WEBX_LST" -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
   done < "$WRD_LSTS"
 
   ### Once some directories are found, scan for specific file extensions and headers
+  
 
+  ### Take screenshots
+  
+  if [ ! -d "$IP_DIR""/screenshots" ]; then
+    SCREEN_DIR="IP_DIR""/screenshots"
+    mkdir "$SCREEN_DIR"
+    echo -e "\n\n##### Created $SCREEN_DIR"
+  fi
+  cd "$SCREEN_DIR"
+
+
+  for h in $(cat "*gobuster_p$TPORT.txt" | awk -F" " '{ print $1}'); do (cutycapt --url=$h --out=$(echo "$h" | awk -F"//" '{print $NF".png"}' | tr '\/' '_')); done
+
+  cd "$IP_DIR"
+  # Gobuster output
+  
 fi
 
 
