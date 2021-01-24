@@ -35,6 +35,8 @@ SCANS_DIR="/home/kali/GitWorkspace/oscpPrep/scans/"
 IP_DIR=""
 # Screenshots directory
 SCREEN_DIR=""
+# Discovered directories (from dirb, gobuster)
+DISCOVERED_DIRS=""
 
 #----- FILE NAMES -----#
 # Custom list of wordlists for http
@@ -52,7 +54,7 @@ do
   fi
 done < "$SECLIST_WEBEXT"
 
-#----- VERIFY CLI INPUT -----#
+#---- VERIFY CLI INPUT -----#
 # 1 argument (IP address) or 3 arguments (IP, port, scan type)
 if [ "$#" -eq 1 ]; then
   IP="$1"
@@ -78,13 +80,22 @@ else
 fi
 
 #----- CREATE/CHANGE TO TARGET IP SCANS DIR -----# 
+# Create directory for target's IP address
 IP_DIR="$SCANS_DIR""$IP"
 cd "$SCANS_DIR"
 if [ ! -d "$IP_DIR" ]; then
   mkdir "$IP_DIR"
-  echo -e "\n\n##### Created $IP_DIR"
+  echo -e "\n##### Created $IP_DIR"
 fi
 cd "$IP_DIR"
+
+# Create screenshots directory
+SCREEN_DIR="$IP_DIR""/screenshots"
+if [ ! -d "$SCREEN_DIR" ]; then
+  mkdir "$SCREEN_DIR"
+  echo -e "\n##### Created $SCREEN_DIR"
+fi
+
 
 #-----  DEFAULT TCP/UDP ENUM -----#
 if [ "$#" -eq 1 ]; then
@@ -108,21 +119,23 @@ if [ "$#" -eq 1 ]; then
   echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" --script default,safe,auth,vuln "$IP" -oA "$IP""_nmap_tcp_sS_nseDefaultSafeAuthVuln"
 
   ### UDP Scans
-  #echo -e "\n\n#UDP# 1. Running UDP defeat-icmp-ratelimit"
-  #echo "$PASS" | sudo -S nmap -sU -p- --defeat-icmp-ratelimit -oA "$IP" "$IP""_nmap_udp_sU_defIcmpRateLimit"
+  echo -e "\n\n#UDP# 1. Running UDP defeat-icmp-ratelimit"
+  echo "$PASS" | sudo -S nmap -sU -p- --defeat-icmp-ratelimit "$IP" -oA "$IP""_nmap_udp_sU_defIcmpRateLimit"
 
-  #UDP_PORTS=$(xmllint --xpath "//port/@portid" *nmap*udp*.xml | sed 's/"//g' | awk -F"=" '{print $NF}' | sort -n | uniq | tr '\n' ',' | sed 's/.$//')
-  #echo -e "\n\n##### UDP_PORTS:$UDP_PORTS"
+  UDP_PORTS=$(xmllint --xpath "//port/@portid" *nmap*udp*.xml | sed 's/"//g' | awk -F"=" '{print $NF}' | sort -n | uniq | tr '\n' ',' | sed 's/.$//')
+  echo -e "\n\n##### UDP_PORTS: $UDP_PORTS"
+  echo "$UDP_PORTS" > udp_ports
 
-  #if [ ! -z "$UDP_PORTS" ] ; then
-  #  echo -e "\n\n#UDP# 1. Running UDP, verbose, reason"
-  #  echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -v --reason "$IP" -oA "$IP""_nmap_udp_sU_v_reason"
-  #  echo -e "\n\n#UDP# 2. Running: UDP, version detection intensity 9"
-  #  echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -sV --version-intensity 9 "$IP" -oA "$IP""_nmap_udp_sU_sV_intensity9"
-  #  echo -e "\n\n#UDP# 3. Running: UDP, aggressive scan" 
-  #  echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -A "$IP" -oA "$IP""_nmap_udp_sU_A"
-  #  echo -e "\n\n#UDP# 4. Running: NSE scripts"
-  #  echo "$PASS" | sudo -S nmap -sU -p- --script default,safe,auth,vuln "$IP" -oA "$IP""_nmap_udp_sU_nseDefaultSafeAuthVuln"
+  if [ ! -z "$UDP_PORTS" ] ; then
+    echo -e "\n\n#UDP# 1. Running UDP, verbose, reason"
+    echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -v --reason "$IP" -oA "$IP""_nmap_udp_sU_v_reason"
+    echo -e "\n\n#UDP# 2. Running: UDP, version detection intensity 9"
+    echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -sV --version-intensity 9 "$IP" -oA "$IP""_nmap_udp_sU_sV_intensity9"
+    echo -e "\n\n#UDP# 3. Running: UDP, aggressive scan" 
+    echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -A "$IP" -oA "$IP""_nmap_udp_sU_A"
+    echo -e "\n\n#UDP# 4. Running: NSE scripts"
+    echo "$PASS" | sudo -S nmap -sU -p- --script default,safe,auth,vuln "$IP" -oA "$IP""_nmap_udp_sU_nseDefaultSafeAuthVuln"
+  fi
 fi
 
 #----- SSH ENUM -----#
@@ -137,50 +150,45 @@ if [ "$ENUM" == "ssh" ]; then
   echo "$PASS" | sudo -S nmap -p"$TPORT" --script ssh-publickey-acceptance --script-args 'ssh.usernames={"root"}, ssh.privatekeys={"./id_rsa1.pub", "./id_rsa2.pub"}' "$IP" -oA "$IP""_nmap_tcp_sshHPKA_root_private_rsa1_rsa2_p""$TPORT"
 fi
 
+#----- HTTP ENUM -----#
 if [ "$ENUM" == "http" ]; then
-  ### NSE
-  echo -e "\n\n##### Running: NSE http"
-  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-enum,http-grep,http-config-backup,http-rfi-spider,http-default-accounts" "$IP" -oA "$IP""_nmap_tcp_nse_httpEnumGrepConfigRfiDefaccount_p""$TPORT"
+  DISCOVERED_DIRS="discovered_dirs_p$TPORT"
+  
+  ### Run NSE
+  #echo -e "\n\n##### Running: NSE http"
+  #echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-enum,http-grep,http-config-backup,http-rfi-spider,http-default-accounts" "$IP" -oA "$IP""_nmap_tcp_nse_httpEnumGrepConfigRfiDefaccount_p""$TPORT"
 
-  ### Nikto
+  ### Run Nikto
   #echo -e "\n\n##### Running: nikto all plugins"
   #nikto -h "$IP" -p "$TPORT" -C all -Plugins @@ALL -Save "nikto_requestResponse_p""$TPORT" -output "$IP""_nikto_cAll_pluginsAll_p""$TPORT"".txt"
   
-  ### Discover directories
-  # dirb
-  echo -e "\n\n##### Running: dirb non-recursive"
-  dirb http://"$IP"":""$TPORT" -r -o "$IP""_dirb_nonRecursive_p""$TPORT"".txt"
-  echo -e "\n\n##### Running: dirb recursive"
-  dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
+  ### Discover Directories
+  # Run dirb
+  #echo -e "\n\n##### Running: dirb non-recursive"
+  #dirb http://"$IP"":""$TPORT" -r -o "$IP""_dirb_nonRecursive_p""$TPORT"".txt"
+  #echo -e "\n\n##### Running: dirb recursive"
+  #dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
+  #cat *dirb* | grep ^+ | sort | uniq | awk -F" " '{ print $2 }' >> "$DISCOVERED_DIRS" 
 
-  # gobuster
+  # Run GoBuster
   while IFS= read -r line; do
     echo "##### Running: GoBuster, wordlist=$line"
-    gobuster dir -e -u "http://""$IP"":""$TPORT" -s "200,204,301,302,307,403,500" -t 100 -x "$WEBX_LST" -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
+    #gobuster dir -e -u "http://""$IP"":""$TPORT" -t 100 -x "$WEBX_LST" -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
+    gobuster dir -e -u "http://""$IP"":""$TPORT" -t 100 -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
   done < "$WRD_LSTS"
 
+  cat *gobuster_p$TPORT.txt | grep ^http | sort | uniq | awk -F" " '{ print $1}' >> "$DISCOVERED_DIRS"
+  
   ### Once some directories are found, scan for specific file extensions and headers
+  #while IFS= read -r line; do
+    #echo "##### Running: GoBuster, wordlist=$line"
+    #gobuster dir -e -u "http://""$IP"":""$TPORT" -s "200,204,301,302,307,403,500" -t 100 -x "$WEBX_LST" -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
+  #done < "$WRD_LSTS"
   
 
   ### Take screenshots
-  
-  if [ ! -d "$IP_DIR""/screenshots" ]; then
-    SCREEN_DIR="IP_DIR""/screenshots"
-    mkdir "$SCREEN_DIR"
-    echo -e "\n\n##### Created $SCREEN_DIR"
-  fi
-  cd "$SCREEN_DIR"
-
-
-  for h in $(cat "*gobuster_p$TPORT.txt" | awk -F" " '{ print $1}'); do (cutycapt --url=$h --out=$(echo "$h" | awk -F"//" '{print $NF".png"}' | tr '\/' '_')); done
-
-  cd "$IP_DIR"
+  echo "##### Running: Taking screenshots..."
+  for h in $(cat *gobuster_p$TPORT.txt | grep ^http | sort | uniq | awk -F" " '{ print $1}'); do (cutycapt --url=$h --out=$(echo "$h" | awk -F"//" '{print $NF}' | tr '\/' '_' | tr '.' '_' | awk -F" " '{ print $NF".png"}')); done
+  mv *.png "$SCREEN_DIR"
   # Gobuster output
-  
 fi
-
-
-echo "##### Completed: $0"
-exit 0 
-
-
