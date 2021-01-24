@@ -3,3 +3,6 @@ find /usr/share/seclists/Discovery/Web-Content/ -type f
 
 # Parse gobuster for directories and get screenshot
 for h in $(cat goout.txt | awk -F" " '{ print $1}'); do (cutycapt --url=$h --out=$(echo "$h" | awk -F"//" '{print $NF".png"}' | tr '\/' '_')); done
+
+# Find a string in files recursively
+find /home/kali -type f | xargs grep -ril "nginx" 2>/dev/null

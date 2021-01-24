@@ -2,7 +2,7 @@
 
 # TODO Fix default UDP when we come across a machine using UDP ports
 # TODO Fix ssh-scansernames.py
-
+# TODO Research http NSE for script args, and fix to run them separately or together on one command
 
 source /home/kali/Documents/mypass.sh
 
@@ -85,7 +85,7 @@ IP_DIR="$SCANS_DIR""$IP"
 cd "$SCANS_DIR"
 if [ ! -d "$IP_DIR" ]; then
   mkdir "$IP_DIR"
-  echo -e "\n##### Created $IP_DIR"
+  echo -e "##### Created $IP_DIR"
 fi
 cd "$IP_DIR"
 
@@ -93,7 +93,7 @@ cd "$IP_DIR"
 SCREEN_DIR="$IP_DIR""/screenshots"
 if [ ! -d "$SCREEN_DIR" ]; then
   mkdir "$SCREEN_DIR"
-  echo -e "\n##### Created $SCREEN_DIR"
+  echo -e "##### Created $SCREEN_DIR"
 fi
 
 
@@ -155,20 +155,22 @@ if [ "$ENUM" == "http" ]; then
   DISCOVERED_DIRS="discovered_dirs_p$TPORT"
   
   ### Run NSE
-  #echo -e "\n\n##### Running: NSE http"
-  #echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-enum,http-grep,http-config-backup,http-rfi-spider,http-default-accounts" "$IP" -oA "$IP""_nmap_tcp_nse_httpEnumGrepConfigRfiDefaccount_p""$TPORT"
+  echo -e "##### Running: NSE http"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-enum,http-grep,http-config-backup,http-rfi-spider,http-default-accounts" "$IP" -oA "$IP""_nmap_tcp_nse_httpEnumGrepConfigRfiDefaccount_p""$TPORT"
+  # Parse out the discovered directories from nmap
 
   ### Run Nikto
-  #echo -e "\n\n##### Running: nikto all plugins"
-  #nikto -h "$IP" -p "$TPORT" -C all -Plugins @@ALL -Save "nikto_requestResponse_p""$TPORT" -output "$IP""_nikto_cAll_pluginsAll_p""$TPORT"".txt"
-  
+  echo -e "##### Running: nikto all plugins"
+  nikto -h "$IP" -p "$TPORT" -C all -Plugins @@ALL -Save "nikto_requestResponse_p""$TPORT" -output "$IP""_nikto_cAll_pluginsAll_p""$TPORT"".txt"
+  # Parse out the discovered directories from nikto
+ 
   ### Discover Directories
   # Run dirb
-  #echo -e "\n\n##### Running: dirb non-recursive"
-  #dirb http://"$IP"":""$TPORT" -r -o "$IP""_dirb_nonRecursive_p""$TPORT"".txt"
-  #echo -e "\n\n##### Running: dirb recursive"
-  #dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
-  #cat *dirb* | grep ^+ | sort | uniq | awk -F" " '{ print $2 }' >> "$DISCOVERED_DIRS" 
+  echo -e "##### Running: dirb non-recursive"
+  dirb http://"$IP"":""$TPORT" -r -o "$IP""_dirb_nonRecursive_p""$TPORT"".txt"
+  echo -e "##### Running: dirb recursive"
+  dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
+  cat *dirb* | grep ^+ | sort | uniq | awk -F" " '{ print $2 }' >> "$DISCOVERED_DIRS" 
 
   # Run GoBuster
   while IFS= read -r line; do
@@ -176,19 +178,12 @@ if [ "$ENUM" == "http" ]; then
     #gobuster dir -e -u "http://""$IP"":""$TPORT" -t 100 -x "$WEBX_LST" -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
     gobuster dir -e -u "http://""$IP"":""$TPORT" -t 100 -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
   done < "$WRD_LSTS"
-
   cat *gobuster_p$TPORT.txt | grep ^http | sort | uniq | awk -F" " '{ print $1}' >> "$DISCOVERED_DIRS"
-  
+
   ### Once some directories are found, scan for specific file extensions and headers
-  #while IFS= read -r line; do
-    #echo "##### Running: GoBuster, wordlist=$line"
-    #gobuster dir -e -u "http://""$IP"":""$TPORT" -s "200,204,301,302,307,403,500" -t 100 -x "$WEBX_LST" -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
-  #done < "$WRD_LSTS"
-  
 
   ### Take screenshots
   echo "##### Running: Taking screenshots..."
-  for h in $(cat *gobuster_p$TPORT.txt | grep ^http | sort | uniq | awk -F" " '{ print $1}'); do (cutycapt --url=$h --out=$(echo "$h" | awk -F"//" '{print $NF}' | tr '\/' '_' | tr '.' '_' | awk -F" " '{ print $NF".png"}')); done
+  for h in $(cat "$DISCOVERED_DIRS" | sort | uniq); do (cutycapt --url=$h --out=$(echo "$h" | awk -F"//" '{print $NF}' | tr '\/' '_' | tr '.' '_' | awk -F" " '{ print $NF".png"}')); done
   mv *.png "$SCREEN_DIR"
-  # Gobuster output
 fi
