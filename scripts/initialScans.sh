@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# TODO Fix default UDP when we come across a machine using UDP ports
-# TODO Fix ssh-scansernames.py
-# TODO Research http NSE for script args, and fix to run them separately or together on one command
-
 source /home/kali/Documents/mypass.sh
 
 <<COMMENT
@@ -40,7 +36,7 @@ DISCOVERED_DIRS=""
 
 #----- FILE NAMES -----#
 # Custom list of wordlists for http
-WRD_LSTS="/home/kali/GitWorkspace/oscpPrep/cfgs/discover_webdirs.txt"
+WRD_LSTS="/home/kali/GitWorkspace/oscpPrep/cfgs/discover-webdirs.txt"
 # Seclist of web extensions
 SECLIST_WEBEXT="/home/kali/GitWorkspace/oscpPrep/cfgs/web-extensions.txt"
 # Web extension list separated by commas
@@ -53,6 +49,8 @@ do
     WEBX_LST="$WEBX_LST,$webx"
   fi
 done < "$SECLIST_WEBEXT"
+# Filename for wget output
+WGET_OUT=""
 
 #---- VERIFY CLI INPUT -----#
 # 1 argument (IP address) or 3 arguments (IP, port, scan type)
@@ -94,6 +92,13 @@ SCREEN_DIR="$IP_DIR""/screenshots"
 if [ ! -d "$SCREEN_DIR" ]; then
   mkdir "$SCREEN_DIR"
   echo -e "##### Created $SCREEN_DIR"
+fi
+
+# Create wget directory
+WGET_DIR="$IP_DIR""/wgetDir"
+if [ ! -d "$WGET_DIR" ]; then
+  mkdir "$WGET_DIR"
+  echo -e "##### Created $WGET_DIR"
 fi
 
 
@@ -142,8 +147,8 @@ fi
 if [ "$ENUM" == "ssh" ]; then
   ### NSE
   #echo "$PASS" | sudo -S nmap -p"$TPORT" --script ssh-v1 "$IP" -oA "$IP""_nmap_tcp_22_sshV1_p""$TPORT"
-  echo "$PASS" | sudo -S nmap -p"$TPORT" --script ssh2-enum-algos "$IP" -oA "$IP""_nmap_tcp_ssh2EnumAlgos_p""$TPORT"
-  echo "$PASS" | sudo -S nmap -p"$TPORT" --script ssh-auth-methods --script-args="ssh.user=root" "$IP" -oA "$IP""_nmap_tcp_sshAuth_root_p""$TPORT"
+  # TODO echo "$PASS" | sudo -S nmap -p"$TPORT" --script ssh2-enum-algos "$IP" -oA "$IP""_nmap_tcp_ssh2EnumAlgos_p""$TPORT"
+  # TODO echo "$PASS" | sudo -S nmap -p"$TPORT" --script ssh-auth-methods --script-args="ssh.user=root" "$IP" -oA "$IP""_nmap_tcp_sshAuth_root_p""$TPORT"
   #echo "$PASS" | sudo -S nmap -p"$TPORT" --script ssh-brute "$IP" -oA "$IP""_nmap_tcp_22_sshBrute_""$TPORT"
   echo "$PASS" | sudo -S nmap -p"$TPORT" --script ssh-hostkey --script-args ssh_hostkey=all "$IP" -oA "$IP""_nmap_tcp_sshHostkey_all_p""$TPORT"
   echo "$PASS" | sudo -S nmap -p"$TPORT" --script ssh-publickey-acceptance --script-args 'ssh.usernames={"root"}, publickeys={"./id_rsa1.pub", "./id_rsa2.pub"}' "$IP" -oA "$IP""_nmap_tcp_sshPKA_root_public_rsa1_rsa2_p""$TPORT"
@@ -155,21 +160,42 @@ if [ "$ENUM" == "http" ]; then
   DISCOVERED_DIRS="discovered_dirs_p$TPORT"
   
   ### Run NSE
-  echo -e "##### Running: NSE http"
-  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-enum,http-grep,http-config-backup,http-rfi-spider,http-default-accounts" "$IP" -oA "$IP""_nmap_tcp_nse_httpEnumGrepConfigRfiDefaccount_p""$TPORT"
+  echo -e "##### Running: NSE http-auth-finder"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-auth-finder" "$IP" -oA "$IP""_nmap_tcp_nse_httpAuthFinder_p""$TPORT"
+  echo -e "##### Running: NSE http-auth"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-auth" "$IP" -oA "$IP""_nmap_tcp_nse_httpAuth_p""$TPORT"
+  echo -e "##### Running: NSE http-backup-finder"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" -d --script "http-backup-finder" "$IP" -oA "$IP""_nmap_tcp_nse_httpBackupFinder_p""$TPORT"
+  echo -e "##### Running: NSE http-config-backup"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-config-backup" "$IP" -oA "$IP""_nmap_tcp_nse_httpConfigBackup_p""$TPORT"
+  echo -e "##### Running: NSE http-cookie-flags"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-cookie-flags" "$IP" -oA "$IP""_nmap_tcp_nse_httpCookieFlags_p""$TPORT"
+  echo -e "##### Running: NSE http-default-accounts"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-default-accounts" "$IP" -oA "$IP""_nmap_tcp_nse_httpDefaultAccounts_p""$TPORT"
+  echo -e "##### Running: NSE http-fileupload-exploiter"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-fileupload-exploiter" "$IP" -oA "$IP""_nmap_tcp_nse_httpFileUploadExploiter_p""$TPORT"
+  echo -e "##### Running: NSE http-form-brute"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-form-brute" "$IP" -oA "$IP""_nmap_tcp_nse_httpFormBrute_p""$TPORT"
+  echo -e "##### Running: NSE http-rfi-spider"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-rfi-spider" "$IP" -oA "$IP""_nmap_tcp_nse_http-rfi-spider_p""$TPORT"
+  echo -e "##### Running: NSE http-server-header"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-server-header" "$IP" -oA "$IP""_nmap_tcp_nse_http-ServerHeader_p""$TPORT"
+  echo -e "##### Running: NSE http-sql-injection"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-sql-injection" "$IP" -oA "$IP""_nmap_tcp_nse_http-SqlInjection_p""$TPORT"
+  # TODO http-passwd, http-put
   # Parse out the discovered directories from nmap
 
   ### Run Nikto
   echo -e "##### Running: nikto all plugins"
   nikto -h "$IP" -p "$TPORT" -C all -Plugins @@ALL -Save "nikto_requestResponse_p""$TPORT" -output "$IP""_nikto_cAll_pluginsAll_p""$TPORT"".txt"
-  # Parse out the discovered directories from nikto
+  # TODO Parse out the discovered directories from nikto
  
   ### Discover Directories
   # Run dirb
   echo -e "##### Running: dirb non-recursive"
   dirb http://"$IP"":""$TPORT" -r -o "$IP""_dirb_nonRecursive_p""$TPORT"".txt"
-  echo -e "##### Running: dirb recursive"
-  dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
+  #echo -e "##### Running: dirb recursive"
+  #dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
   cat *dirb* | grep ^+ | sort | uniq | awk -F" " '{ print $2 }' >> "$DISCOVERED_DIRS" 
 
   # Run GoBuster
@@ -184,6 +210,15 @@ if [ "$ENUM" == "http" ]; then
 
   ### Take screenshots
   echo "##### Running: Taking screenshots..."
-  for h in $(cat "$DISCOVERED_DIRS" | sort | uniq); do (cutycapt --url=$h --out=$(echo "$h" | awk -F"//" '{print $NF}' | tr '\/' '_' | tr '.' '_' | awk -F" " '{ print $NF".png"}')); done
+  cat "$DISCOVERED_DIRS" | sort | uniq -i  >> tmp.txt
+  cat tmp.txt > "$DISCOVERED_DIRS"
+  rm tmp.txt
+  for h in $(cat "$DISCOVERED_DIRS"); do (cutycapt --url=$h --out=$(echo "$h" | awk -F"//" '{print $NF}' | tr '\/' '_' | tr '.' '_' | awk -F" " '{ print $NF".png"}')); done
   mv *.png "$SCREEN_DIR"
+
+  ### Download source code using wget
+  WGET_OUT="wgetOut_p$TPORT"
+  wget -i "$DISCOVERED_DIRS" -xattr -o "$WGET_OUT" -S -r -l 2 -np -P "$WGET_DIR"
 fi
+
+sudo rm *.gnmap *.xml
