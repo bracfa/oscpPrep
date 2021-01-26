@@ -1,0 +1,3 @@
+/usr/share/wordlists/dirb/common.txt
+/usr/share/wordlists/dirb/indexes.txt
+/usr/share/seclists/Discovery/Web-Content/big.txt
