@@ -25,6 +25,7 @@ PASS="$pass"
 ENUM_ARR=()
 ENUM_ARR+=('ssh')
 ENUM_ARR+=('http')
+ENUM_ARR+=('mongod')
 # Scans directory
 SCANS_DIR="/home/kali/GitWorkspace/oscpPrep/scans/"
 # Target IP directory
@@ -118,8 +119,8 @@ if [ "$#" -eq 1 ]; then
 
   echo -e "\n\n#TCP# 4. Running: SYN Stealth, version detection intensity 9"
   echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -sV --version-intensity 9 "$IP" -oA "$IP""_nmap_tcp_sS_sV_intensity9"
-  echo -e "\n\n#TCP# 5. Running: Syn Stealth, aggressive scan" 
-  echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -A "$IP" -oA "$IP""_nmap_tcp_sS_A"
+  #echo -e "\n\n#TCP# 5. Running: Syn Stealth, aggressive scan" 
+  #echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -A "$IP" -oA "$IP""_nmap_tcp_sS_A"
   echo -e "\n\n#TCP# 6. Running: NSE scripts"
   echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" --script default,safe,auth,vuln "$IP" -oA "$IP""_nmap_tcp_sS_nseDefaultSafeAuthVuln"
 
@@ -221,4 +222,8 @@ if [ "$ENUM" == "http" ]; then
   wget -i "$DISCOVERED_DIRS" -xattr -o "$WGET_OUT" -S -r -l 2 -np -P "$WGET_DIR"
 fi
 
-sudo rm *.gnmap *.xml
+#----- MONGODB -----#
+if [ "$ENUM" == "mongod" ]; then
+  echo -e "##### Running: NSE mongod"
+  echo "$PASS" | sudo -S nmap -p"$TPORT" --script "*mongo*" "$IP" -oA "$IP""_nmap_tcp_nse_mongod_p""$TPORT"
+fi
