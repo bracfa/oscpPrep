@@ -1,0 +1,18 @@
+Check if pip3 installed
+Check if virtualenv is installed
+
+sudo pip3 install virtualenvwrapper
+
+In .bashrc
+export WORKON_HOME=$HOME/.virtualenvs
+export PROJECT_HOME=$HOME/GitWorkspace/oscpPrep/python-virtual-envs
+export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
+source /usr/local/bin/virtualenvwrapper.sh
+
+Create the python-virtual-envs directory
+
+Then in bash shell:
+source .bashrc
+
+To make a project with python 
+
