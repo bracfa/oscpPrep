@@ -132,4 +132,7 @@ if ! shopt -oq posix; then
   fi
 fi
 
-export PATH=$PATH:$HOME/.local/bin
+export WORKON_HOME=$HOME/.virtualenvs
+export PROJECT_HOME=$HOME/GitWorkspace/oscpPrep/python-virtual-envs
+export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
+source /usr/local/bin/virtualenvwrapper.sh
