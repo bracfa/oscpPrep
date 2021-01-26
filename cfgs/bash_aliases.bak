@@ -17,6 +17,10 @@ alias vhtb='phtb; cd /home/kali/Vpn/cfgFiles/htb && sudo openvpn tru3n0rth.ovpn'
 #-- CHANGE DIRECTORIES --#
 # Go to Python virtual environments
 alias pve='cd /home/kali/Python-Virtual-Envs'
+# Go to gitWorkspace
+alias g='cd /home/kali/GitWorkspace'
+# Go to oscpPrep
+alias o='cd /home/kali/GitWorkspace/oscpPrep'
 # Go to cfgs
 alias c='cd /home/kali/GitWorkspace/oscpPrep/cfgs'
 # Go to scripts
