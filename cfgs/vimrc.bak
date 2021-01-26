@@ -1,0 +1,8 @@
+syntax on
+set number
+set ruler
+set cursorline
+set wildmenu
+set showmatch
+set incsearch
+set hlsearch

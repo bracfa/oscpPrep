@@ -1,0 +1,25 @@
+#-- OS COMMANDS --#
+# Print out bashrc aliases
+alias a='cat $HOME/.bash_aliases | grep "^alias " | cut -f1 -d" " --complement'
+# Reboot
+alias r='sudo shutdown -r now'
+# Shutdown
+alias bye='sudo shutdown -h now'
+
+#-- VPN --#
+# Print username and password for OS PG
+alias ppg='cat /home/kali/Vpn/pass/pg/cbpass'
+alias vpg='ppg; cd /home/kali/Vpn/cfgFiles/pg && sudo openvpn vpn_config.ovpn'
+# Print username and password for HTB
+alias phtb='cat /home/kalie/Vpn/pass/htb/cbpass'
+alias vhtb='phtb; cd /home/kali/Vpn/cfgFiles/htb && sudo openvpn tru3n0rth.ovpn'
+
+#-- CHANGE DIRECTORIES --#
+# Go to Python virtual environments
+alias pve='cd /home/kali/Python-Virtual-Envs'
+# Go to cfgs
+alias c='cd /home/kali/GitWorkspace/oscpPrep/cfgs'
+# Go to scripts
+alias s='cd /home/kali/GitWorkspace/oscpPrep/scripts'
+# Go to scans
+alias sc='cd /home/kali/GitWorkspace/oscpPrep/scans'
