@@ -6,3 +6,6 @@ for h in $(cat goout.txt | awk -F" " '{ print $1}'); do (cutycapt --url=$h --out
 
 # Find a string in files recursively
 find /home/kali -type f | xargs grep -ril "nginx" 2>/dev/null
+
+# Make virtual project
+mkproject --python=/usr/bin/python<version> <project-name>
