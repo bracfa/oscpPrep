@@ -64,27 +64,47 @@ if [ ! -d "$IP_DIR" ]; then
 fi
 cd "$IP_DIR"
 
-#-----  DEFAULT TCP/UDP ENUM -----#
+#----- ENUMERATE -----#
 if [ "$#" -eq 1 ]; then
   ### TCP Scans
   echo -e "\n\n##### Running	: TCP SYN Stealth, reason, verbose"
   echo "$PASS" | sudo -S nmap -p- --reason -v "$IP" -oA "$IP""_nmap_tcp_sS_reason_verbose"
-  echo -e "\n\n##### Running	: TCP SYN Stealth, host discovery disabled"
+  echo -e "\n\n##### Running	: TCP SYN Stealth, reason, host discovery disabled"
   echo "$PASS" | sudo -S nmap -Pn -p- --reason "$IP" -oA "$IP""_nmap_tcp_sS_Pn_reason"
-  #echo -e "\n\n##### Running: SYN ACK, verbose. For firewall discovery"
-  #echo "$PASS" | sudo -S nmap -sA -p- -v "$IP" -oA "$IP""_nmap_tcp_sA_v"
 
   TCP_PORTS=$(xmllint --xpath "//port/@portid" *nmap*tcp*.xml | sed 's/"//g' | awk -F"=" '{print $NF}' | sort -n | uniq | tr '\n' ',' | sed 's/.$//')
   echo -e "\n\n##### TCP ports found: $TCP_PORTS"
   echo "$TCP_PORTS" > tcp_ports
   sleep 2
 
-  echo -e "\n\n##### Running	: TCP SYN Stealth, version detection intensity 9"
-  echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -sV --version-intensity 9 "$IP" -oA "$IP""_nmap_tcp_sS_sV_intensity9"
-  #echo -e "\n\n#TCP# 5. Running: Syn Stealth, aggressive scan" 
-  #echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -A "$IP" -oA "$IP""_nmap_tcp_sS_A"
+  echo -e "\n\n##### Running	: TCP SYN Stealth, timing1, version detection intensity 9"
+  echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -sV -T1 --version-intensity 9 "$IP" -oA "$IP""_nmap_tcp_timing1_sS_sV_intensity9"
+  echo -e "\n\n##### Running	: Syn Stealth, timing1, aggressive scan" 
+  echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -A -T1 "$IP" -oA "$IP""_nmap_tcp_sS_timing1_A"
   echo -e "\n\n##### Running	: TCP SYN Stealth, NSE scripts"
   echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" --script default,safe,auth,vuln "$IP" -oA "$IP""_nmap_tcp_sS_nse_default-safe-auth-vuln"
+  
+  #echo -e "\n\n##### Running	: Syn Stealth, timing 1, reason" 
+  #echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -T1 --reason "$IP" -oA "$IP""_nmap_tcp_sS_reason_timing1"
+  #echo -e "\n\n##### Running	: TCP FIN, reason, verbose"
+  #echo "$PASS" | sudo -S nmap -sF -p"$TCP_PORTS" --reason -v "$IP" -oA "$IP""_nmap_tcp_sF_reason_verbose"
+  #echo -e "\n\n##### Running	: TCP SYN Stealth, source port 53 reason, verbose"
+  #echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -g53 --reason -v "$IP" -oA "$IP""_nmap_tcp_sS_source-port53_reason_verbose"
+  #echo -e "\n\n##### Running	: TCP SYN Stealth, source port 88, reason, verbose"
+  #echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -g88 --reason -v "$IP" -oA "$IP""_nmap_tcp_sS_source-port88_reason_verbose"
+  #echo -e "\n\n##### Running	: TCP SYN Stealth, fragmented, reason, verbose"
+  #echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -f --reason -v "$IP" -oA "$IP""_nmap_tcp_sS_fragmented_reason_verbose"
+  #echo -e "\n\n##### Running	: TCP SYN Stealth, mtu8, reason, verbose"
+  #echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" --mtu 8 --reason -v "$IP" -oA "$IP""_nmap_tcp_sS_mtu8_reason_verbose"
+  #echo -e "\n\n##### Running	: TCP SYN Stealth, badsum, reason, verbose"
+  #echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" --badsum --reason -v "$IP" -oA "$IP""_nmap_tcp_sS_badsum_reason_verbose"
+  
+  ### TCP Banner grabbing
+  # NC
+  echo -e "\n\n##### Running	: TCP port nc banner grab ports $TCP_PORTS"
+  for p in $(echo "$TCP_PORTS" | sed 's/,/\n/g'); do (echo "" | nc -nv -w 2 "$IP" "$p" >> "$IP""_nc_tcp_nv_w.txt" 2>&1); done   
+  # Telnet
+  # cURL
 
   ### UDP Scans
   echo -e "\n\n##### Running	: UDP defeat-icmp-ratelimit"
@@ -95,6 +115,8 @@ if [ "$#" -eq 1 ]; then
   echo "$UDP_PORTS" > udp_ports
 
   if [ ! -z "$UDP_PORTS" ] ; then
+    echo -e "\n\n##### Running	: UDP, verbose, reason, timing 1"
+    echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -T1 -v --reason "$IP" -oA "$IP""_nmap_udp_sU_v_reason_timing1"
     echo -e "\n\n##### Running	: UDP, verbose, reason"
     echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -v --reason "$IP" -oA "$IP""_nmap_udp_sU_v_reason"
     echo -e "\n\n##### Running	: UDP, version detection intensity 9"
@@ -103,6 +125,13 @@ if [ "$#" -eq 1 ]; then
     echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -A "$IP" -oA "$IP""_nmap_udp_sU_A"
     echo -e "\n\n##### Running	: NSE scripts"
     echo "$PASS" | sudo -S nmap -sU -p- --script default,safe,auth,vuln "$IP" -oA "$IP""_nmap_udp_sU_nse_default-safe-auth-vuln"
+    
+    ### UDP  Banner grabbing
+    # NC
+    echo -e "\n\n##### Running	: UDP port nc banner grab ports $UDP_PORTS"
+    for p in $(echo "$UDP_PORTS" | sed 's/,/\n/g'); do (echo "" | nc -u -nv -w 2 "$IP" "$p" >> "$IP""_nc_udp_nv_w2.txt" 2>&1); done   
+    # Telnet
+    # cURL
   fi
 else
   bash /home/kali/GitWorkspace/oscpPrep/scripts/"$ENUM"-scans.sh "$IP" "$TPORT" "$ENUM"

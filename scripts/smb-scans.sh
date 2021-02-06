@@ -44,7 +44,7 @@ fi
 
 #----- ENUMERATE -----#
 ### NSE
-if [ "$TPORT" -eq 4455 ]; then
+if [ "$TPORT" -eq 445 ]; then
   echo -e "##### Running	: NSE smb2"
   echo "$PASS" | sudo -S nmap -p"$TPORT" --script "smb2*" "$IP" -oA "$IP""_nmap_tcp_sS_nse_smb2_p""$TPORT"
   echo -e "##### Running	: NSE smb-enum-domains"
@@ -145,4 +145,4 @@ echo "" | smbclient -L "$IP" > "$IP""_smbclient_p""$TPORT"".txt"
 ### rpcclient to open an unauthenticated session
 echo -e "##### Running	: rpcclient -a"
 rpcclient -p "$TPORT" -U "" -N "$IP" > "$IP""_rpcclient_unauthenticated_p""$TPORT"".txt"
-
+# TODO This needs something echoed to rpcclient because it hangs
