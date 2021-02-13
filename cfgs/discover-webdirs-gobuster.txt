@@ -1,0 +1,1 @@
+/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt

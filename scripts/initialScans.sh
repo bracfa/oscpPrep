@@ -44,7 +44,7 @@ elif [ "$#" -eq 3 ]; then
   else
     ENUM="$3"
   fi
-  echo -e "##### Running: $0\n##### IP	: $IP\n##### Port	: $TPORT\n##### Enum	: $ENUM"
+  echo -e "##### Running	: $0\n##### IP	: $IP\n##### Port	: $TPORT\n##### Enum	: $ENUM"
 else
   echo "##### USAGE (default)	: bash $0 <IP Address>"
   echo "##### USAGE (specific)	: bash $0 <IP Address> <Port> <Enum Type>"
@@ -60,23 +60,26 @@ IP_DIR="$SCANS_DIR""$IP"
 cd "$SCANS_DIR"
 if [ ! -d "$IP_DIR" ]; then
   mkdir "$IP_DIR"
-  echo -e "##### Created $IP_DIR"
+  echo -e "##### Created	: $IP_DIR"
 fi
 cd "$IP_DIR"
 
-#----- ENUMERATE -----#
+#----- INITIAL SCANS -----#
 if [ "$#" -eq 1 ]; then
-  ### TCP Scans
+  ### TCP  ###
+  # Scan for open ports
   echo -e "\n\n##### Running	: TCP SYN Stealth, reason, verbose"
   echo "$PASS" | sudo -S nmap -p- --reason -v "$IP" -oA "$IP""_nmap_tcp_sS_reason_verbose"
   echo -e "\n\n##### Running	: TCP SYN Stealth, reason, host discovery disabled"
   echo "$PASS" | sudo -S nmap -Pn -p- --reason "$IP" -oA "$IP""_nmap_tcp_sS_Pn_reason"
-
+  
+  # Save the ports to a variable
   TCP_PORTS=$(xmllint --xpath "//port/@portid" *nmap*tcp*.xml | sed 's/"//g' | awk -F"=" '{print $NF}' | sort -n | uniq | tr '\n' ',' | sed 's/.$//')
   echo -e "\n\n##### TCP ports found: $TCP_PORTS"
   echo "$TCP_PORTS" > tcp_ports
   sleep 2
 
+  # Scan only the open TCP ports  
   echo -e "\n\n##### Running	: TCP SYN Stealth, timing1, version detection intensity 9"
   echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -sV -T1 --version-intensity 9 "$IP" -oA "$IP""_nmap_tcp_timing1_sS_sV_intensity9"
   echo -e "\n\n##### Running	: Syn Stealth, timing1, aggressive scan" 
@@ -84,6 +87,7 @@ if [ "$#" -eq 1 ]; then
   echo -e "\n\n##### Running	: TCP SYN Stealth, NSE scripts"
   echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" --script default,safe,auth,vuln "$IP" -oA "$IP""_nmap_tcp_sS_nse_default-safe-auth-vuln"
   
+  # Firewall detection 
   #echo -e "\n\n##### Running	: Syn Stealth, timing 1, reason" 
   #echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" -T1 --reason "$IP" -oA "$IP""_nmap_tcp_sS_reason_timing1"
   #echo -e "\n\n##### Running	: TCP FIN, reason, verbose"
@@ -99,17 +103,19 @@ if [ "$#" -eq 1 ]; then
   #echo -e "\n\n##### Running	: TCP SYN Stealth, badsum, reason, verbose"
   #echo "$PASS" | sudo -S nmap -p"$TCP_PORTS" --badsum --reason -v "$IP" -oA "$IP""_nmap_tcp_sS_badsum_reason_verbose"
   
-  ### TCP Banner grabbing
-  # NC
+  # TCP Banner grabbing
+  # netcat
   echo -e "\n\n##### Running	: TCP port nc banner grab ports $TCP_PORTS"
   for p in $(echo "$TCP_PORTS" | sed 's/,/\n/g'); do (echo "" | nc -nv -w 2 "$IP" "$p" >> "$IP""_nc_tcp_nv_w.txt" 2>&1); done   
   # Telnet
   # cURL
 
-  ### UDP Scans
+  ### UDP Port Scans ###
+  # Scan for open ports
   echo -e "\n\n##### Running	: UDP defeat-icmp-ratelimit"
   echo "$PASS" | sudo -S nmap -sU -p- --defeat-icmp-ratelimit "$IP" -oA "$IP""_nmap_udp_sU_defeat-icmp-ratelimit"
 
+  # Save the open ports to a variable
   UDP_PORTS=$(xmllint --xpath "//port/@portid" *nmap*udp*.xml | sed 's/"//g' | awk -F"=" '{print $NF}' | sort -n | uniq | tr '\n' ',' | sed 's/.$//')
   echo -e "\n\n##### UDP ports found	: $UDP_PORTS"
   echo "$UDP_PORTS" > udp_ports
@@ -126,13 +132,14 @@ if [ "$#" -eq 1 ]; then
     echo -e "\n\n##### Running	: NSE scripts"
     echo "$PASS" | sudo -S nmap -sU -p- --script default,safe,auth,vuln "$IP" -oA "$IP""_nmap_udp_sU_nse_default-safe-auth-vuln"
     
-    ### UDP  Banner grabbing
-    # NC
+    # UDP  Banner grabbing
+    # netcat
     echo -e "\n\n##### Running	: UDP port nc banner grab ports $UDP_PORTS"
     for p in $(echo "$UDP_PORTS" | sed 's/,/\n/g'); do (echo "" | nc -u -nv -w 2 "$IP" "$p" >> "$IP""_nc_udp_nv_w2.txt" 2>&1); done   
     # Telnet
     # cURL
   fi
+#----- SPECIFIC SCANS -----#
 else
   bash /home/kali/GitWorkspace/oscpPrep/scripts/"$ENUM"-scans.sh "$IP" "$TPORT" "$ENUM"
 fi

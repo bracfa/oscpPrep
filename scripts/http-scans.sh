@@ -22,11 +22,12 @@ ENUM=""
 # Attack machine password
 PASS="$pass"
 # Custom list of wordlists for http
-WRD_LSTS="/home/kali/GitWorkspace/oscpPrep/cfgs/discover-webdirs.txt"
+WRD_LSTS_GOBUSTER="/home/kali/GitWorkspace/oscpPrep/cfgs/discover-webdirs-gobuster.txt"
+WRD_LSTS_FFUF="/home/kali/GitWorkspace/oscpPrep/cfgs/discover-webdirs-ffuf.txt"
 # Seclist of web extensions
 SECLIST_WEBEXT="/home/kali/GitWorkspace/oscpPrep/cfgs/web-extensions.txt"
-# Brute forced directories/files
-BRUTED=""
+# Brute forced directories/files filenme
+BRUTED_ALL=""
 # A list of web extensions, separated by commas
 WEBX_LST=""
 # Directory name for screenshots
@@ -35,7 +36,8 @@ SCREENSHOTS_DIR=""
 WGET_DIR=""
 # Temporary file
 TMP=""
-
+# HTTP status codes filename
+HTTP_CODES="http-status-codes"
 
 #---- VERIFY CLI INPUT -----#
 # 3 arguments required (IP, port, scan type)
@@ -80,7 +82,7 @@ do
 done < "$SECLIST_WEBEXT"
 
 #----- MANUAL ENUMERATION -----#
-# file extensions
+# check for file extensions
 
 #----- GENERAL SCANNING -----#
 ### Nikto ###
@@ -96,75 +98,74 @@ echo -e "##### Running	: Wapiti all modules"
 wapiti -u "http://""$IP"":""$TPORT""/" -m "backup,blindsql,buster,crlf,exec,file,htaccess,methods,nikto,permanentxss,redirect,shellshock,sql,ssrf,xss,xxe" --color -v 2 -f txt -o "$IP""_wapiti_color_verbose2_txt_p""$TPORT"
 
 ### Nmap NSE ###
-# TODO http-passwd, http-put
-echo -e "##### Running	: NSE http-auth-finder"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-auth-finder" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-auth-finder_p""$TPORT"
-echo -e "##### Running	: NSE http-auth"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-auth" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-auth_p""$TPORT"
-echo -e "##### Running	: NSE http-backup-finder"
-echo "$PASS" | sudo -S nmap -p"$TPORT" -d --script "http-backup-finder" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-backup-finder_p""$TPORT"
-echo -e "##### Running	: NSE http-config-backup"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-config-backup" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-config-backup_p""$TPORT"
-echo -e "##### Running	: NSE http-cookie-flags"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-cookie-flags" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-cookie-flags_p""$TPORT"
-echo -e "##### Running	: NSE http-default-accounts"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-default-accounts" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-default-accounts_p""$TPORT"
-echo -e "##### Running	: NSE http-fileupload-exploiter"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-fileupload-exploiter" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-fileupload-exploiter_p""$TPORT"
-echo -e "##### Running	: NSE http-form-brute"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-form-brute" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-form-brute_p""$TPORT"
-echo -e "##### Running	: NSE http-rfi-spider"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-rfi-spider" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-rfi-spider_p""$TPORT"
-echo -e "##### Running	: NSE http-server-header"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-server-header" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-server-header_p""$TPORT"
-echo -e "##### Running	: NSE http-sql-injection"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-sql-injection" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http-sql-injection_p""$TPORT"
+echo -e "##### Running	: NSE http"
+echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-*" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http_p""$TPORT"
 
 #----- BRUTE FORCE DIRS/FILES -----#
-BRUTED="bruted_dirs_p$TPORT"
 
-# Run dirb non-recursive
-#echo -e "##### Running	: dirb non-recursive"
-#dirb http://"$IP"":""$TPORT" -r -o "$IP""_dirb_nonRecursive_p""$TPORT"".txt"
-#echo -e "##### Running: dirb recursive"
-#dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
-#cat *dirb*p"$TPORT"".txt" | grep ^+ | sort | uniq | awk -F" " '{ print $2 }' >> "$BRUTED" 
-
-# Run GoBuster
-#while IFS= read -r line; do
-  #echo "##### Running	: GoBuster, wordlist=$line"
-  ##gobuster dir -e -u "http://""$IP"":""$TPORT" -t 100 -x "$WEBX_LST" -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
-  #gobuster dir -e -u "http://""$IP"":""$TPORT" -t 100 -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
-#done < "$WRD_LSTS"
-#cat *gobuster_p$TPORT.txt | grep ^http | sort | uniq | awk -F" " '{ print $1 }' >> "$BRUTED"
-
-### Ffuf ###
+# GoBuster
 while IFS= read -r line; do
-  echo -e "#### Running	: ffuf"
+  echo "##### Running	: GoBuster, wordlist=$line"
+  gobuster dir -e -u "http://""$IP"":""$TPORT" -t 10 -w "$line" >> "$IP""_gobuster_p$TPORT.txt"
+done < "$WRD_LSTS_GOBUSTER"
+
+# Dirb recursive
+echo -e "##### Running	: dirb recursive"
+dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
+
+# Ffuf
+while IFS= read -r line; do
+  echo -e "##### Running	: ffuf"
   nm=$(echo $line | awk -F"/" '{ print $NF }' | awk -F"." '{print $1}')
-  ffuf -c -w "$line" -u "http://""$IP"":""$TPORT""/FUZZ" -r -c -v -o "$IP""_ffuf_wl_""$nm""_p""$TPORT"".json"
-  cat "*ffuf*_p""$TPORT".json | jq '.results[] | [.status,.url] | join (" ")' | sed 's/"//g' | grep "^200" | sort | uniq | awk -F" " '{print $NF}' >> "$BRUTED"
-done < "$WRD_LSTS"
+  cmd=$(head -n 1 $line)
+  if [ "$cmd" == "/" ]; then
+    ffuf -w "$line" -u "http://""$IP"":""$TPORT""FUZZ" -recursion -recursion-depth 2 -r -c -v -e "$WEBX_LST" -o "$IP""_ffuf_wl_""$nm""_p""$TPORT"".json"
+  else
+    ffuf -w "$line" -u "http://""$IP"":""$TPORT""/FUZZ" -recursion -recursion-depth 2 -r -c -v -e "$WEBX_LST" -o "$IP""_ffuf_wl_""$nm""_p""$TPORT"".json"
+  fi
+done < "$WRD_LSTS_FFUF"
 
-#----- SCAN FOR EXTENSIONS -----#
-
-
-#----- TAKE SCREENSHOTS -----#
-echo "##### Running	: Taking screenshots..."
-TMP="tmp_p$TPORT.txt"
-cat "$BRUTED" | sort | uniq -i  >> "$TMP"
-cat "$TMP" > "$BRUTED"
+#----- FIND ALL DIFFERENT STATUS CODES -----#
+echo -e "##### Running	: Finding all HTTP status codes"
+cat *dirb*p"$TPORT"".txt" | grep "CODE:" | awk -F"CODE:" '{print $NF}' | awk -F"|" '{print $1}' | sort | uniq >> "$HTTP_CODES" 
+cat *gobuster*p"$TPORT"".txt" | grep "^http://" | awk -F" " '{print $NF}' | sed 's/)//g' | sort | uniq >> "$HTTP_CODES"
+cat *ffuf*p"$TPORT"".json" | jq '.results[]| .status' | sort | uniq >> "$HTTP_CODES" 
+TMP="tmp-http-status_p$TPORT.txt"
+cat "$HTTP_CODES" | sort | uniq >> "$TMP"
+cat "$TMP" > "$HTTP_CODES"
 rm "$TMP"
-if [ -s "$BRUTED" ]; then
-  for h in $(cat "$BRUTED"); do (cutycapt --url=$h --out=$(echo "$h" | awk -F"//" '{print $NF}' | tr '\/' '_' | tr '.' '_' | awk -F" " '{ print $NF".png"}')); done
+
+#----- SORT OUT THE HTTP STATUS CODES -----#
+echo -e "##### Running	: Sorting HTTP Statuses"
+BRUTED_ALL="bruted_http-status-all_p""$TPORT"
+while IFS= read -r line; do
+  OUT="bruted_http-status-""$line""_p$TPORT"
+  cat *gobuster_p$TPORT.txt | grep "Status: $line)$" | sort | uniq | awk -F" " '{ print $1 }' >> "$OUT"
+  cat *dirb*p"$TPORT"".txt" | grep "^+" | grep "CODE:$line" | sort | uniq | awk -F" " '{ print $2 }' >> "$OUT" 
+  cat *ffuf*_p"$TPORT".json | jq '.results[] | [.status,.url] | join (" ")' | sed 's/"//g' | grep "^$line" | sort | uniq | awk -F" " '{print $2}' >> "$OUT"
+  TMP="tmp-bruted-http-status-$line""_p$TPORT.txt"
+  cat "$OUT" | sort | uniq >> "$TMP"
+  cat "$TMP" > "$OUT"
+  cat "$OUT" >> "$BRUTED_ALL"
+  rm "$TMP"
+done < "$HTTP_CODES"
+
+#----- TAKE SCREENSHOTS OF ALL BRUTE FORCED DIRECTORIES -----#
+echo "##### Running	: Taking screenshots..."
+TMP="tmp-screenshots_p$TPORT.txt"
+if [ -s "$BRUTED_ALL" ]; then
+  for h in $(cat "$BRUTED_ALL"); do (firefox -P takeScreenshots --screenshot $(echo "$h" | awk -F"http://" '{print $2}' | tr '//' '-' | tr '.' '_' | awk -F" " '{ print $1".png"}') "$h" ); done
 else
-  cutycapt --url="http://$IP:$TPORT" --out=$(echo "$IP:$TPORT" | tr '.' '_' | awk -F" " '{ print $NF".png"}')
+  firefox -P takeScreenshots --screenshot $(echo "$IP:$TPORT" | awk -F"http://" '{print $2".png"}') "$h"
 fi
 mv *.png "$SCREENSHOTS_DIR"
 
-#----- DOWNLOAD SOURCE -----#
-if [ -s "$BRUTED" ]; then
-  wget -i "$BRUTED" -xattr -o "wget_source_p$TPORT.txt" -S -r -l 1 -np -P "$WGET_DIR"
+#----- DOWNLOAD SOURCE OF ALL BRUTED DIRECTORIES -----#
+if [ -s "$BRUTED_ALL" ]; then
+  wget -i "$BRUTED_ALL" --save-headers -xattr -o "wget_source_p$TPORT.txt" -S -r -l 1 -np -P "$WGET_DIR"
 else
-  wget "http://$IP:$TPORT" -xattr -o "wget_source_p$TPORT.txt" -S -r -l 1 -np -P "$WGET_DIR"
+  wget "http://$IP:$TPORT" --save-headers -xattr -o "wget_source_p$TPORT.txt" -S -r -l 1 -np -P "$WGET_DIR"
 fi
+
+#----- TEST FOR HEAD CONTROL BYPASS -----#
+# For all the 302 directs, trying using HEAD instead of GET, then check for status 200

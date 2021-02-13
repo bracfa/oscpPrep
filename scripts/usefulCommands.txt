@@ -9,3 +9,6 @@ find /home/kali -type f | xargs grep -ril "nginx" 2>/dev/null
 
 # Make virtual project
 mkproject --python=/usr/bin/python<version> <project-name>
+
+# Make a new wordlist that strips the forward slash from each line
+sed "s/^\///g" list.txt > newlist.txt

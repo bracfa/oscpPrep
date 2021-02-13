@@ -1,0 +1,2 @@
+/usr/share/seclists/Discovery/Web-Content/RobotsDisallowed-Top1000.txt
+/usr/share/seclists/Discovery/Web-Content/big.txt
