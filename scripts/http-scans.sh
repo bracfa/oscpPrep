@@ -95,13 +95,18 @@ whatweb -a 4 "$IP"":""$TPORT" --log-verbose="$IP""_whatweb_aggression4_verbose_p
 
 ### Wapiti ###
 echo -e "##### Running	: Wapiti all modules"
-wapiti -u "http://""$IP"":""$TPORT""/" -m "backup,blindsql,buster,crlf,exec,file,htaccess,methods,nikto,permanentxss,redirect,shellshock,sql,ssrf,xss,xxe" --color -v 2 -f txt -o "$IP""_wapiti_color_verbose2_txt_p""$TPORT"
+wapiti -u "http://""$IP"":""$TPORT""/" -m "backup,blindsql,crlf,exec,file,htaccess,methods,permanentxss,redirect,shellshock,sql,ssrf,xss,xxe" --color -v 2 -f txt -o "$IP""_wapiti_color_verbose2_txt_p""$TPORT"
 
 ### Nmap NSE ###
-echo -e "##### Running	: NSE http"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-*" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http_p""$TPORT"
+# TODO: Figure out the important scripts to run
+#echo -e "##### Running	: NSE http"
+#echo "$PASS" | sudo -S nmap -p"$TPORT" --script "http-*" "$IP" -oA "$IP""_nmap_tcp_sS_nse_http_p""$TPORT"
 
 #----- BRUTE FORCE DIRS/FILES -----#
+
+# Dirb non-recursive
+echo -e "##### Running	: dirb non-recursive"
+dirb http://"$IP"":""$TPORT" -r -o "$IP""_dirb_non-recursive_p""$TPORT"".txt"
 
 # GoBuster
 while IFS= read -r line; do
@@ -110,8 +115,8 @@ while IFS= read -r line; do
 done < "$WRD_LSTS_GOBUSTER"
 
 # Dirb recursive
-echo -e "##### Running	: dirb recursive"
-dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
+#echo -e "##### Running	: dirb recursive"
+#dirb http://"$IP"":""$TPORT" -o "$IP""_dirb_recursive_p""$TPORT"".txt"
 
 # Ffuf
 while IFS= read -r line; do

@@ -45,4 +45,4 @@ fi
 
 #----- ENUMERATE -----#
 echo -e "##### Running: NSE redis"
-echo "$PASS" | sudo -S nmap -p"$TPORT" --script "*redis*" "$IP" -oA "$IP""_nmap_tcp_nse_redis_p""$TPORT"
+echo "$PASS" | sudo -S nmap -p"$TPORT" --script "redis-*" "$IP" -oA "$IP""_nmap_tcp_nse_redis_p""$TPORT"

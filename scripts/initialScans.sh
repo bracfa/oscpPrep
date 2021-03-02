@@ -130,7 +130,7 @@ if [ "$#" -eq 1 ]; then
     echo -e "\n\n##### Running	: UDP, aggressive scan" 
     echo "$PASS" | sudo -S nmap -sU -p"$UDP_PORTS" -A "$IP" -oA "$IP""_nmap_udp_sU_A"
     echo -e "\n\n##### Running	: NSE scripts"
-    echo "$PASS" | sudo -S nmap -sU -p- --script default,safe,auth,vuln "$IP" -oA "$IP""_nmap_udp_sU_nse_default-safe-auth-vuln"
+    echo "$PASS" | sudo -S nmap -sU -sV -p- --script default,safe,auth,vuln "$IP" -oA "$IP""_nmap_udp_sU_nse_default-safe-auth-vuln"
     
     # UDP  Banner grabbing
     # netcat

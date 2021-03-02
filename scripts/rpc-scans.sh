@@ -21,6 +21,8 @@ TPORT=""
 ENUM=""
 # Attack machine password
 PASS="$pass"
+# Metasploit resource file name
+RPC_RSC=""
 
 # At this point, we should already be in the target IP directory
 # Create a subdirectory here, if needed, make sure to include service and port number
@@ -48,7 +50,22 @@ echo -e "##### Running	: impacket rpcdump.py"
 impacket-rpcdump -p "$TPORT" "$IP" > "$IP""_impacket-rpcdump_rpc_p""$TPORT"".txt"
 
 # metasploit
-# use auxiliary/scanner/dcerpc/endpoint_mapper
-# use auxiliary/scanner/dcerpc/hidden
-# use auxiliary/scanner/dcerpc/management
-# use auxiliary/scanner/dcerpc/tcp_dcerpc_auditor
+echo -e "##### Creating	: rpc metsasploit resource script "
+RPC_RSC="rpc-resource_$IP""_p""$TPORT"".rc"
+touch "$RPC_RSC"
+echo "setg rhosts $IP" >> "$RPC_RSC"
+echo "use auxiliary/scanner/dcerpc/endpoint_mapper" >> "$RPC_RSC"
+echo "exploit" >> "$RPC_RSC"
+echo "use auxiliary/scanner/dcerpc/hidden" >> "$RPC_RSC"
+echo "exploit" >> "$RPC_RSC"
+echo "use auxiliary/scanner/dcerpc/management" >> "$RPC_RSC"
+echo "exploit" >> "$RPC_RSC"
+echo "use auxiliary/scanner/dcerpc/tcp_dcerpc_auditor" >> "$RPC_RSC"
+echo "exploit" >> "$RPC_RSC"
+echo "exit" >> "$RPC_RSC"
+
+# Run metasploit
+# NOTE: This is not run as sudo
+echo -e "##### Running	: rpc metsasploit resource script "
+msfconsole -q -r "$RPC_RSC" -o "$IP""_metasploit-rpc_p""$TPORT"".txt"
+
